@@ -1,0 +1,14 @@
+{
+  "name": "mkgs-github-mirror",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Maciej Krüger <mkg20001@gmail.com>",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "html-minifier": "^3.4.3"
+  }
+}
