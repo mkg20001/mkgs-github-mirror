@@ -22,6 +22,6 @@ tree -h -H ./git git > tree.html
 tree -h -J git > tree.json
 sed 's|<title>Directory Tree</title>|<title>Git Directory Tree</title>\n  <link rel="stylesheet" type="text/css" href="style.css" />|' -i tree.html
 
-echo \$ cd $HOME/ZeroNet
+echo \$ cd $zeromain
 echo \$ python2 zeronet.py siteSign $zite
 echo \$ python2 zeronet.py --fileserver_port 15555 sitePublish $zite
