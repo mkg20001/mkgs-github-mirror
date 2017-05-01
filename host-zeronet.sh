@@ -1,14 +1,20 @@
 #!/bin/bash
 
-zite="1F7b27kT38nMYZQg7tvDr33qWDZQgwnQpw"
-zerodata="$HOME/ZeroNet/data"
-zerodir="$zerodata/$zite"
-zitename="git.mkg20001.bit"
+. $config
 
 if [ -z "$1" ]; then
   echo "Usage: $0 <username>"
   exit 2
 fi
+
+check_blacklist() {
+  for b in $blacklist; do
+    if [ "$b" == "$1" ]; then
+      return 1
+    fi
+  done
+  return 0
+}
 
 log() {
   echo " => $@"
@@ -46,7 +52,7 @@ no_quote() {
 }
 
 main=$(dirname $(readlink -f $0))
-stamain="$main/stagit"
+stamain="$main/github-backup/stagit"
 stagit="$stamain/stagit"
 scripts="$main/scripts"
 
@@ -103,9 +109,7 @@ domain="example.com"
 
 parse_options "$@"
 
-log "GitHub Self-Rehost.sh v1"
-
-htmlmin="$main/r-minify/node_modules/.bin/html-minifier"
+log "ZeroNet Rehost v1"
 
 userb="$PWD/$1"
 userR="$userb/repos"
@@ -128,11 +132,11 @@ fi
 if [ "$2" == "all" ]; then
   log "Update assets (devmode)"
   for r in style.css favicon.png logo.png; do
-    cp $main/r-assets/$r $zerodir/git/$user/$r
+    cp $main/assets/$r $zerodir/git/$user/$r
   done
   for repo in $(dir -w 1 $userR); do
     echo "r $repo"
-    cp $main/r-assets/$r $zerodir/git/$user/$repo/$r
+    cp $main/assets/$r $zerodir/git/$user/$repo/$r
   done
   exit 0
 fi
@@ -143,7 +147,7 @@ mkdir -p $out
 mkdir -p $zerodir/git/$user
 
 log "Copy resources"
-cp $main/r-assets/style.css $out/style.css
+cp $main/assets/style.css $out/style.css
 
 cp $stamain/logo.png $out/avatar.png
 cp $out/avatar.png $out/favicon.png
@@ -181,63 +185,52 @@ wait_pids() {
 repos=$(dir -w 1 $userR)
 repos_g=""
 for repo in $repos; do
-  log "Copy $repo"
-  if ! [ -e "$userS/$repo" ]; then
-    echo "WARN: stagit folder for $repo not found"
+  if check_blacklist "$user/$repo"; then
+    log "Copy $repo"
+    if ! [ -e "$userS/$repo" ]; then
+      echo "WARN: stagit folder for $repo not found"
+    fi
+    log3 "Copying bare repo"
+    cp -rp $userR/$repo $out/$repo.git
+    log3 "Copying HTML"
+    cp -rp $userS/$repo $out/$repo
+    log3 "Copying stagit cache"
+    cp -rp $userC/$repo $out/$repo.cache
+
+    newurl="http://localhost:43110/$zitename/git/$user/$repo.git.tar.gz/$repo.git"
+    log3 "Update url to $newurl"
+    echo "$newurl" > $out/$repo.git/url
+    cd $out/$repo
+
+    log3 "Update server info"
+
+    cd $out/$repo.git
+    git update-server-info
+
+    cd $out/$repo
+
+    log3 "Run stagit to apply changes"
+    $stagit -c $out/$repo.cache $out/$repo.git
+    exit_code $? "stagit failed"
+
+    rm $out/$repo.cache
+
+    log3 "HTMLMIN"
+    cd $out/$repo
+    pids=""
+    pre=$(du -s .)
+    find -iname "*.html" > $scripts/files
+    cd $scripts;node $scripts/minifyall.js $out/$repo;cd $out/$repo
+    wait_pids 0
+    find -iname "*.html.orig" -delete
+    after=$(du -s .)
+    echo "Minify: $pre => $after"
+    echo "Minify: $pre => $after" > $out/$repo.minify
+    repos_g="$repos_g $repo.git"
+    cd $out
+  else
+    log "Ignore blacklisted repo $user/$repo"
   fi
-  log3 "Copying bare repo"
-  cp -rp $userR/$repo $out/$repo.git
-  log3 "Copying HTML"
-  cp -rp $userS/$repo $out/$repo
-  log3 "Copying stagit cache"
-  cp -rp $userC/$repo $out/$repo.cache
-
-  newurl="http://localhost:43110/$zitename/git/$user/$repo.git.tar.gz/$repo.git"
-  log3 "Update url to $newurl"
-  echo "$newurl" > $out/$repo.git/url
-  cd $out/$repo
-
-  log3 "Update server info"
-
-  cd $out/$repo.git
-  git update-server-info
-
-  cd $out/$repo
-
-  log3 "Run stagit to apply changes"
-  $stagit -c $out/$repo.cache $out/$repo.git
-  exit_code $? "stagit failed"
-
-  rm $out/$repo.cache
-
-  log3 "HTMLMIN"
-  cd $out/$repo
-  pids=""
-  pre=$(du -s .)
-  find -iname "*.html" > $main/r-minify/files
-  cd $main/r-minify;node $main/r-minify/minifyall.js $out/$repo;cd $out/$repo
-#  length=$(find -iname "*.html" | cat -n | tail -n 1 | grep "[0-9]*" -o | head -n 1)
-#  i=0
-#  IFS='
-#' read -ra supfiles <<< $(find -iname "*.html")
-#  for f in ${supfiles[@]}; do
-#    let i=$i+1
-#    echo "Process $i/$length  $running  $f..."
-#    wait_pids 15
-#    mv $f $f.orig
-#    $htmlmin \
-#      --collapse-boolean-attributes --collapse-whitespace --decode-entities --html5 --minify-css --minify-js \
-#      --quote-character \" --remove-attribute-quotes --remove-comments --remove-optional-tags \
-#      --remove-redundant-attributes --remove-script-type-attributes --remove-style-link-type-attributes --remove-tag-whitespace --use-short-doctype \
-#      "$f.orig" > "$f" &pids="$pids $!"
-#  done
-  wait_pids 0
-  find -iname "*.html.orig" -delete
-  after=$(du -s .)
-  echo "Minify: $pre => $after"
-  echo "Minify: $pre => $after" > $out/$repo.minify
-  repos_g="$repos_g $repo.git"
-  cd $out
 done
 
 cd $out
@@ -253,16 +246,20 @@ rm -rfv "$zerodir/git/$user"
 mkdir "$zerodir/git/$user"
 
 for repo in $repos; do
-  log "ZeroHost $repo"
-  repopath="$zerodir/git/$user/$repo"
-  log3 "Update HTML"
-  rm -rf $repopath $repopath.tar.gz
-  tar cvfz $repopath.tar.gz $repo
-  rm -rf $out/$repo
-  log3 "Update git"
-  rm -rf $repopath.git $repopath.git.tar.gz
-  tar cvfz $repopath.git.tar.gz $repo.git
-  rm -rf $out/$repo.git
+  if check_blacklist "$user/$repo"; then
+    log "ZeroHost $repo"
+    repopath="$zerodir/git/$user/$repo"
+    log3 "Update HTML"
+    rm -rf $repopath $repopath.tar.gz
+    tar cvfz $repopath.tar.gz $repo
+    rm -rf $out/$repo
+    log3 "Update git"
+    rm -rf $repopath.git $repopath.git.tar.gz
+    tar cvfz $repopath.git.tar.gz $repo.git
+    rm -rf $out/$repo.git
+  else
+    log "Ignore blacklisted repo $user/$repo"
+  fi
 done
 
 log "Replace index.html"

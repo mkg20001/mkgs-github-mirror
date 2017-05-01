@@ -1,0 +1,11 @@
+#!/bin/bash
+
+zite="1F7b27kT38nMYZQg7tvDr33qWDZQgwnQpw"
+zeromain="$HOME/ZeroNet"
+zerodata="$zeromain/data"
+zerodir="$zerodata/$zite"
+zitename="git.mkg20001.bit"
+
+users="mkg20001 hellozeronet"
+orgs="thetorproject"
+blacklist="user/repo"
