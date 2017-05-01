@@ -237,7 +237,7 @@ cd $out
 
 log "Update index"
 
-stagit-index $repos_g > index.html
+${stagit}-index $repos_g > index.html
 exit_code $? "stagit-index failed"
 
 cd $out

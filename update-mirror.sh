@@ -24,4 +24,4 @@ sed 's|<title>Directory Tree</title>|<title>Git Directory Tree</title>\n  <link 
 
 echo "Sign & Publish"
 
-cd scripts && node sign.js
+cd $main/scripts && node sign.js
