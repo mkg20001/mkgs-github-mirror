@@ -251,11 +251,11 @@ for repo in $repos; do
     repopath="$zerodir/git/$user/$repo"
     log3 "Update HTML"
     rm -rf $repopath $repopath.tar.gz
-    tar cvfz $repopath.tar.gz $repo
+    tar cfz $repopath.tar.gz $repo
     rm -rf $out/$repo
     log3 "Update git"
     rm -rf $repopath.git $repopath.git.tar.gz
-    tar cvfz $repopath.git.tar.gz $repo.git
+    tar cfz $repopath.git.tar.gz $repo.git
     rm -rf $out/$repo.git
   else
     log "Ignore blacklisted repo $user/$repo"
