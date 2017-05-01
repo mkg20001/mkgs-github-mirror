@@ -71,7 +71,7 @@ if (cluster.isMaster) {
     cluster.once('message', (worker /*,msg*/ ) => {
       ii++
       working++
-      if (new Date().getTime() - l > 100 || ii === _length) {
+      if (new Date().getTime() - l > 500 || ii === _length) {
         console.log("[%s|%s/%s] Process\t(%s/%s)\t%s...", worker.id, working, numCPUs, ii, _length, f)
         l = new Date().getTime()
       }
@@ -86,7 +86,7 @@ if (cluster.isMaster) {
     var si = setInterval(() => {
       if (working) console.log("Waiting for %s more worker(s) to finish...", working);
       else clearInterval(si)
-    }, 100)
+    }, 250)
     eachWorker((worker) => {
       worker.send('end');
     });
