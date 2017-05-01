@@ -273,6 +273,4 @@ for r in style.css favicon.png logo.png; do
   rm $out/$r
 done
 
-node $scripts/remove-optional.js "$zerodir/content.json"
-
 log "Sign & Publish your content.json"
