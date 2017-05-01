@@ -9,6 +9,8 @@
   "author": "Maciej Krüger <mkg20001@gmail.com>",
   "license": "GPL-3.0",
   "dependencies": {
-    "html-minifier": "^3.4.3"
+    "html-minifier": "^3.4.3",
+    "request": "^2.81.0",
+    "ws": "^2.3.1"
   }
 }
