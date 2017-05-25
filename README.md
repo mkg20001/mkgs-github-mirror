@@ -18,4 +18,4 @@ To mirror just run "update-mirror.sh" after setting up your config
  - [ ] Don't run stagit again to rehost. Use replace after htmlmin
  - [x] Trash old repos
  - [ ] Speed up
- - [ ] Append "[fork]" to forks desc
+ - [x] Append "[fork]" to forks desc
