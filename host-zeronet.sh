@@ -251,12 +251,12 @@ for repo in $repos; do
     repopath="$zerodir/git/$user/$repo"
     log3 "Update HTML"
     rm -rf $repopath $repopath.tar.gz
-    find $repo -print0 | xargs -0i touch -a -m -t 200000000000.00 {}
+    find $repo -print0 | xargs -0i touch -a -m -t 200001010000.00 {}
     tar cfz $repopath.tar.gz $repo
     rm -rf $out/$repo
     log3 "Update git"
     rm -rf $repopath.git $repopath.git.tar.gz
-    find $repo.git -print0 | xargs -0i touch -a -m -t 200000000000.00 {}
+    find $repo.git -print0 | xargs -0i touch -a -m -t 200001010000.00 {}
     tar cfz $repopath.git.tar.gz $repo.git
     rm -rf $out/$repo.git
   else
