@@ -212,14 +212,16 @@ for repo in $repos; do
     cd $out
 
     usecache=false
-    [ "$ver" == "$ver_cache" ] && [ -e "$cache/$repo.repo" ] && [ -e "$cache/$repo.git" ] && usecache=true
+    [ "$ver" == "$ver_cache" ] && [ -e "$cache/$repo" ] && [ -e "$cache/$repo.pack" ] && [ -e "$cache/$repo.git" ] && [ -e "$cache/$repo.git.pack" ] && usecache=true
 
     repos_g="$repos_g $repo.git"
 
     if $usecache; then
       log3 "Using cache..."
-      mv $cache/$repo.repo $out/$repo
+      mv $cache/$repo $out/$repo
+      mv $cache/$repo.pack $out/$repo.tar.gz
       mv $cache/$repo.git $out/$repo.git
+      mv $cache/$repo.git.pack $out/$repo.git.tar.gz
     else
       log3 "Copying bare repo"
       cp -rp $userR/$repo $out/$repo.git
@@ -240,10 +242,6 @@ for repo in $repos; do
       git update-server-info
 
       cd $out/$repo
-
-  #    log3 "Run stagit to apply changes"
-  #    $stagit -c $out/$repo.cache $out/$repo.git
-  #    exit_code $? "stagit failed"
 
       rm $out/$repo.cache
 
@@ -280,6 +278,9 @@ cd $out
 rm -rfv "$zerodir/git/$user"
 mkdir "$zerodir/git/$user"
 
+rm -rf $cache
+mkdir -p $cache
+
 for repo in $repos; do
   if check_blacklist "$user/$repo"; then
     log "ZeroHost $repo"
@@ -287,25 +288,24 @@ for repo in $repos; do
     cd $out/$repo.git
 
     ver=$(git_ver)
-    rm -rf $cache/$repo*
 
     cd $out
 
     repopath="$zerodir/git/$user/$repo"
-    log3 "Update HTML"
 
-    rm -rf $repopath $repopath.tar.gz
-    find $repo -print0 | xargs -0i touch -a -m -t 200001010000.00 {}
-    tar cfz $repopath.tar.gz $repo
+    for f in "" .git; do
+      log3 "Update $f"
 
-    mv $out/$repo $cache/$repo.repo
+      rm -rf $repopath $repopath$f.tar.gz
 
-    log3 "Update git"
-    rm -rf $repopath.git $repopath.git.tar.gz
-    find $repo.git -print0 | xargs -0i touch -a -m -t 200001010000.00 {}
-    tar cfz $repopath.git.tar.gz $repo.git
+      find $repo$f -print0 | xargs -0i touch -a -m -t 200001010000.00 {}
 
-    mv $out/$repo.git $cache/$repo.git
+      [ ! -e "$out/$repo$f.tar.gz" ] && tar cfz $repo$f.tar.gz $repo$f
+      cp -p $out/$repo$f.tar.gz $repopath$f.tar.gz
+
+      mv $out/$repo$f $cache/$repo$f
+      mv $out/$repo$f.tar.gz $cache/$repo$f.pack
+    done
 
     echo "$ver" > "$cache/$repo.ver"
   else
