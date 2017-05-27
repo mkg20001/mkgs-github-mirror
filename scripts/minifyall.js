@@ -30,7 +30,9 @@ function processFile(f, next) {
   const p = path.join(process.argv[2], f);
   i++
   hopt.minifyURLs = function (url) {
-    if (url.startsWith("#")) return url;
+    if (url.startsWith("https://github"))
+      return url.replace(process.env.PREURL, process.env.POSTURL.replace("http://localhost:43110", ""))
+    if (url.startsWith("#")) return url
     if (url.startsWith("http://localhost:43110/git.mkg20001.bit/")) return url.replace("http://localhost:43110", "")
     if (url.endsWith("favicon.png") || url.endsWith("style.css") || url.endsWith("logo.png")) return "../../" + url
     return url
@@ -38,7 +40,7 @@ function processFile(f, next) {
   fs.readFile(p, (e, c) => {
     if (e) return next(e)
     try {
-      fs.writeFile(p, new Buffer(htmlmin(c.toString(), hopt).replace("http://localhost:43110/git.mkg20001.bit/", "/git.mkg20001.bit/")), next)
+      fs.writeFile(p, new Buffer(htmlmin(c.toString(), hopt).replace(process.env.PREURL, process.env.POSTURL).replace("http://localhost:43110/git.mkg20001.bit/", "/git.mkg20001.bit/")), next)
     } catch (e) {
       next(e)
     }

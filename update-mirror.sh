@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 . config.sh
 
 main=$(dirname $(readlink -f $0))

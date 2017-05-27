@@ -116,7 +116,9 @@ userR="$userb/repos"
 userS="$userb/stagit"
 userC="$userb/stagit.cache"
 out="$userb-rehost"
+cache="$userb-cache"
 mkdir -p $out
+mkdir -p $cache
 
 if ! [ -e "$userb" ]; then
   echo "$userb not found"
@@ -160,6 +162,15 @@ cd $out
 
 dw=false
 
+git_pipe() {
+  git log --all -q
+  git tag
+}
+
+git_ver() {
+  git_pipe | sha256sum
+}
+
 wait_pids() {
   running=0
   ok=true
@@ -190,44 +201,68 @@ for repo in $repos; do
     if ! [ -e "$userS/$repo" ]; then
       echo "WARN: stagit folder for $repo not found"
     fi
-    log3 "Copying bare repo"
-    cp -rp $userR/$repo $out/$repo.git
-    log3 "Copying HTML"
-    cp -rp $userS/$repo $out/$repo
-    log3 "Copying stagit cache"
-    cp -rp $userC/$repo $out/$repo.cache
 
-    newurl="http://localhost:43110/$zitename/git/$user/$repo.git.tar.gz/$repo.git"
-    log3 "Update url to $newurl"
-    echo "$newurl" > $out/$repo.git/url
-    cd $out/$repo
+    cd $userR/$repo
 
-    log3 "Update server info"
+    ver=$(git_ver)
 
-    cd $out/$repo.git
-    git update-server-info
+    ver_cache="0"
+    [ -e "$cache/$repo.ver" ] && ver_cache=$(cat $cache/$repo.ver)
 
-    cd $out/$repo
-
-    log3 "Run stagit to apply changes"
-    $stagit -c $out/$repo.cache $out/$repo.git
-    exit_code $? "stagit failed"
-
-    rm $out/$repo.cache
-
-    log3 "HTMLMIN"
-    cd $out/$repo
-    pids=""
-    pre=$(du -s .)
-    find -iname "*.html" > $scripts/files
-    cd $scripts;node $scripts/minifyall.js $out/$repo;cd $out/$repo
-    wait_pids 0
-    find -iname "*.html.orig" -delete
-    after=$(du -s .)
-    echo "Minify: $pre => $after"
-    echo "Minify: $pre => $after" > $out/$repo.minify
-    repos_g="$repos_g $repo.git"
     cd $out
+
+    usecache=false
+    [ "$ver" == "$ver_cache" ] && [ -e "$cache/$repo.repo" ] && [ -e "$cache/$repo.git" ] && usecache=true
+
+    repos_g="$repos_g $repo.git"
+
+    if $usecache; then
+      log3 "Using cache..."
+      mv $cache/$repo.repo $out/$repo
+      mv $cache/$repo.git $out/$repo.git
+    else
+      log3 "Copying bare repo"
+      cp -rp $userR/$repo $out/$repo.git
+      log3 "Copying HTML"
+      cp -rp $userS/$repo $out/$repo
+      log3 "Copying stagit cache"
+      cp -rp $userC/$repo $out/$repo.cache
+
+      preurl=$(cat $out/$repo.git/url)
+      newurl="http://localhost:43110/$zitename/git/$user/$repo.git.tar.gz/$repo.git"
+      log3 "Update url to $newurl"
+      echo "$newurl" > $out/$repo.git/url
+      cd $out/$repo
+
+      log3 "Update server info"
+
+      cd $out/$repo.git
+      git update-server-info
+
+      cd $out/$repo
+
+  #    log3 "Run stagit to apply changes"
+  #    $stagit -c $out/$repo.cache $out/$repo.git
+  #    exit_code $? "stagit failed"
+
+      rm $out/$repo.cache
+
+      log3 "HTMLMIN"
+      cd $out/$repo
+      pids=""
+      pre=$(du -s .)
+      find -iname "*.html" > $scripts/files
+      cd $scripts
+        PREURL="$preurl" POSTURL="$newurl" node $scripts/minifyall.js $out/$repo
+      cd $out/$repo
+      wait_pids 0
+      find -iname "*.html.orig" -delete
+      after=$(du -s .)
+      echo "Minify: $pre => $after"
+      echo "Minify: $pre => $after" > $out/$repo.minify
+
+      cd $out
+    fi
   else
     log "Ignore blacklisted repo $user/$repo"
   fi
@@ -248,17 +283,31 @@ mkdir "$zerodir/git/$user"
 for repo in $repos; do
   if check_blacklist "$user/$repo"; then
     log "ZeroHost $repo"
+
+    cd $out/$repo.git
+
+    ver=$(git_ver)
+    rm -rf $cache/$repo*
+
+    cd $out
+
     repopath="$zerodir/git/$user/$repo"
     log3 "Update HTML"
+
     rm -rf $repopath $repopath.tar.gz
     find $repo -print0 | xargs -0i touch -a -m -t 200001010000.00 {}
     tar cfz $repopath.tar.gz $repo
-    rm -rf $out/$repo
+
+    mv $out/$repo $cache/$repo.repo
+
     log3 "Update git"
     rm -rf $repopath.git $repopath.git.tar.gz
     find $repo.git -print0 | xargs -0i touch -a -m -t 200001010000.00 {}
     tar cfz $repopath.git.tar.gz $repo.git
-    rm -rf $out/$repo.git
+
+    mv $out/$repo.git $cache/$repo.git
+
+    echo "$ver" > "$cache/$repo.ver"
   else
     log "Ignore blacklisted repo $user/$repo"
   fi
