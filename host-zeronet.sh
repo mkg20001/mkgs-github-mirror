@@ -212,15 +212,13 @@ for repo in $repos; do
     cd $out
 
     usecache=false
-    [ "$ver" == "$ver_cache" ] && [ -e "$cache/$repo" ] && [ -e "$cache/$repo.pack" ] && [ -e "$cache/$repo.git" ] && [ -e "$cache/$repo.git.pack" ] && usecache=true
+    [ "$ver" == "$ver_cache" ] && [ -e "$cache/$repo.pack" ] && [ -e "$cache/$repo.git.pack" ] && usecache=true
 
     repos_g="$repos_g $repo.git"
 
     if $usecache; then
       log3 "Using cache..."
-      mv $cache/$repo $out/$repo
       mv $cache/$repo.pack $out/$repo.tar.gz
-      mv $cache/$repo.git $out/$repo.git
       mv $cache/$repo.git.pack $out/$repo.git.tar.gz
     else
       log3 "Copying bare repo"
@@ -270,6 +268,10 @@ cd $out
 
 log "Update index"
 
+for repo in $repos; do
+  [ ! -e $repo.git ] && ln -s $userR/$repo $repo.git
+done
+
 ${stagit}-index $repos_g > index.html
 exit_code $? "stagit-index failed"
 
@@ -298,12 +300,11 @@ for repo in $repos; do
 
       rm -rf $repopath $repopath$f.tar.gz
 
-      find $repo$f -print0 | xargs -0i touch -a -m -t 200001010000.00 {}
+      [ -e $repo$f ] && find $repo$f -print0 | xargs -0i touch -a -m -t 200001010000.00 {}
 
       [ ! -e "$out/$repo$f.tar.gz" ] && tar cfz $repo$f.tar.gz $repo$f
-      cp -p $out/$repo$f.tar.gz $repopath$f.tar.gz
+      ln $out/$repo$f.tar.gz $repopath$f.tar.gz
 
-      mv $out/$repo$f $cache/$repo$f
       mv $out/$repo$f.tar.gz $cache/$repo$f.pack
     done
 
