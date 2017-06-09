@@ -10,11 +10,12 @@ mkdir -p backup
 cd backup
   for user in $users; do
     bash $main/github-backup/github-backup.sh $user stagit trash
-    config=$main/config.sh bash $main/host-zeronet.sh $user
   done
   for org in $orgs; do
     bash $main/github-backup/github-backup.sh $org org stagit trash
-    config=$main/config.sh bash $main/host-zeronet.sh $org
+  done
+  for u in $users $orgs; do
+    config=$main/config.sh bash $main/host-zeronet.sh $u
   done
 cd $main
 
