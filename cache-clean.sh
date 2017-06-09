@@ -11,6 +11,7 @@ for u in $orgs $users; do
     echo " -- Remove cache for repo $repo@$u"
     rm -rf $u/stagit/$repo $u/stagit.cache/$repo
   done
+  rm -rf $u/stagit $u/stagit.cache
 done
 
 after=$(du -hs .)
