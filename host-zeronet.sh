@@ -245,17 +245,13 @@ for repo in $repos; do
 
       log3 "HTMLMIN"
       cd $out/$repo
-      pids=""
-      pre=$(du -s .)
+      #pre=$(du -s .)
       find -iname "*.html" > $scripts/files
       cd $scripts
         PREURL="$preurl" POSTURL="$newurl" node $scripts/minifyall.js $out/$repo
       cd $out/$repo
-      wait_pids 0
-      find -iname "*.html.orig" -delete
-      after=$(du -s .)
-      echo "Minify: $pre => $after"
-      echo "Minify: $pre => $after" > $out/$repo.minify
+      #after=$(du -s .)
+      #echo "Minify: $pre => $after"
 
       cd $out
     fi
@@ -324,5 +320,7 @@ for r in style.css favicon.png logo.png; do
   cp $out/$r $zerodir/git/$user/$r
   rm $out/$r
 done
+
+rm -rf $out
 
 log "Sign & Publish your content.json"
